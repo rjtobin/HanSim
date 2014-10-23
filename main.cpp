@@ -33,6 +33,10 @@ int main()
   
   srand48(SEED);
   
+  int scores[26];
+  for(int i=0; i<26; i++)
+    scores[i] = 0;
+  
   double total = 0;
   int tmp;
   for(int i=0; i<num_games; i++)
@@ -40,11 +44,15 @@ int main()
     HanSim h;
     tmp = h.play(true,true);
     total += tmp;
+    scores[tmp]++;
 
   }
   total /= num_games;
-  cerr << total << endl;
 
+  for(int i=0; i<=25; i++)
+    cerr << i << ' ' << scores[i] << endl;
+  
+  cerr << total << endl;
   
   return 0;
 }

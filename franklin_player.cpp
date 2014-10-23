@@ -293,21 +293,23 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
 
     if(rank != 5 && suit !=5)
     {
-        for (int p = 0; p <5; p++){
-         if (p != mPlayerIndex)
-         {
-            for (int p_card = 0; p_card < 4; p_card++)
+        for (int p = 0; p <5; p++)
+        {
+          for (int p_card = 0; p_card < 4; p_card++)
+          {
+            if(p == mPlayerIndex && p_card == c)
+              continue;
+            if (getRank(p,p_card) == rank && getSuit(p,p_card) == suit)
             {
-                if (getRank(p,p_card) == rank && getSuit(p,p_card) == suit)
-                {
-                    action = ACT_DISCARD;
-                    arg1 = c;
-                    return;
-                }
+              action = ACT_DISCARD;
+              arg1 = c;
+              return;
             }
-        }}
+          }
+        }
     }
-}
+  }
+
 
 //--------------------Discard Unknow Duplicate----------------------------------
 
