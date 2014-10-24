@@ -218,6 +218,7 @@ int HanSim::play(bool display, bool to_file)
         outcome = 1;
         mStrikes--;
         new_card = discard(mCurPlayer,arg1);
+        cerr << "ILLEGAL MOVE" << endl;
         //mPlayer[mCurPlayer]->updateHand(arg1, new_card);
       }
       else
@@ -446,3 +447,12 @@ int HanSim::getTime()
   return mHints;
 }
 
+int HanSim::getHandsize(int player)
+{
+  return mHandSize[player];
+}
+
+int HanSim::getTurnNumber()
+{
+  return mTurnNumber;
+}

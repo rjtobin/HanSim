@@ -124,9 +124,17 @@ public:
    Returns the number of hints available to players.
   */
   int getTime();
-
-
   
+  /*
+   Returns the handsize of the given player.
+  */
+  int getHandsize(int player);
+    
+  /*
+    Returns the turn number.
+  */  
+  int getTurnNumber();
+    
 private:
   void output_board(std::ostream& out);
   void output_line(std::ostream& out);
