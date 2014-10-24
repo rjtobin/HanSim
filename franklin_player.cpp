@@ -29,6 +29,10 @@ void Player::init()
       for (int r = 0; r < 5; r++)
         for (int s = 0; s < 5; s++)
           data[p][c][r][s]=5;
+          
+  for(int i=0; i<5; i++)
+    for(int j=0; j<5; j++)
+      seenCards[i][j] = 0;
 }
 
 //==============================================================================
@@ -37,6 +41,40 @@ void Player::init()
 
 void Player::preturnUpdate(int player)
 {
+  for(int i=0; i<5; i++)
+    for(int j=0; j<5; j++)
+      seenCards[i][j] = 0;
+  
+  Card tmp;
+  for(int i=0; i<mGame->getDiscardSize(); i++)
+  {
+    tmp = mGame->getDiscard(i);
+    seenCards[tmp.color][tmp.rank]++;
+  }
+  
+  for(int i=0; i<mGame->getNumPlayers(); i++)
+  {
+    if(i == mPlayerIndex)
+      continue;
+    for(int j=0; j<mGame->getHandsize(i); j++)
+    {
+      tmp = mGame->getCard(i,j);
+      if(tmp.color >= 0 && tmp.color < 5 && tmp.rank >= 0 && tmp.rank < 5)
+      {
+        seenCards[tmp.color][tmp.rank]++;
+      }
+    }
+  }
+  
+  for(int i=0; i<mGame->getHandsize(mPlayerIndex); i++)
+  {
+    int rank = getRank(i);
+    int suit = getSuit(i);
+    
+    if(rank != 5 && suit != 5)
+      seenCards[suit][rank]++;
+  }
+  //cout << "start seen " << seenCards[0][0] << ' ' << seenCards[0][1] << ' ' << seenCards[0][2] << ' ' << seenCards[0][3] << ' ' << seenCards[0][4] << endl;
 }
 
 //==============================================================================
@@ -69,6 +107,72 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
         }
       }
     }
+    
+    else if(rank!=UNKNOWN)
+    {
+      int num_seen = 0;
+      int available = -1;
+      for(int i=0; i<5; i++)
+      {
+        num_seen += seenCards[i][rank];
+        if(rank == 0 && seenCards[i][rank] == 2)
+          available = i;
+        if(rank == 4 && seenCards[i][rank] == 0)
+          available = i;
+        if(rank > 0 && rank < 4 && seenCards[i][rank] == 1)
+          available = i;
+      }
+      int total_count;
+      if(rank == 0)
+        total_count = 15;
+      if(rank > 0 && rank < 4)
+        total_count = 10;
+      if(rank == 4)
+        total_count = 5;
+      if(num_seen == total_count - 1)
+      {
+        Card tmp;
+        tmp = mGame->getCard(mPlayerIndex,c);
+        //cerr << "DEDUCTION: " << suit << ' ' << available << " = " << tmp.color << ' ' << tmp.rank << endl;
+        //cerr << "seen: " << ' ' << seenCards[suit][0] << ' ' << seenCards[suit][1] << ' ' << seenCards[suit][2] << ' ' << seenCards[suit][3] << ' ' << seenCards[suit][4] << endl;
+        if(mGame->getBoardPos(available) == rank - 1)
+        {
+          //cout << "using deduction " << endl;
+          action = ACT_PLAY;
+          arg1 = c;
+          return;
+        }
+      }
+    }
+    
+    else if(suit!=UNKNOWN)
+    {
+      int num_seen = 0;
+      int available = -1;
+      for(int i=0; i<5; i++)
+      {
+        num_seen += seenCards[suit][i];
+        if(i==0 && seenCards[suit][i] == 3-1)
+          available = 0;
+        if(i==4 && seenCards[suit][i] == 0)
+          available = 4;
+        else if(i>0 && i<4 && seenCards[suit][i] == 1)
+          available = i;
+      }
+      if(num_seen == 9)
+      {
+        Card tmp;
+        tmp = mGame->getCard(mPlayerIndex,c);
+        //cerr << "DEDUCTION: " << suit << ' ' << available << " = " << tmp.color << ' ' << tmp.rank << endl;
+        //cerr << "seen: " << ' ' << seenCards[suit][0] << ' ' << seenCards[suit][1] << ' ' << seenCards[suit][2] << ' ' << seenCards[suit][3] << ' ' << seenCards[suit][4] << endl;
+        if(mGame->getBoardPos(suit) == available - 1)
+        {
+          action = ACT_PLAY;
+          arg1 = c;
+          return;
+        }
+      }
+    }
   }
 
   if(lowest_playable_rank != UNKNOWN)
@@ -78,8 +182,7 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
     return;
   }
 
-
-  if(/*goodCards(mPlayerIndex) != 1 &&*/ mGame->getDiscardSize() < 23)
+  if(/*goodCards(mPlayerIndex) != 1 &&*/ mGame->getDiscardSize() < 23 && mGame->getTurnNumber() > 5)
   {
     for(int c = 0; c < 4; c++)
     {
@@ -335,49 +438,78 @@ for(int c = 3; c >-1 ; c--)
     }
 }
 
+//----------------Play random card-----------------------------------
+  
+  int potential = -1,p_card = 0;
+  for(int c=0; c<4; c++)
+  {
+    int rank = getRank(c);
+    int suit = getSuit(c);
+  
+    if(rank != UNKNOWN && suit == UNKNOWN)
+    {
+      if(rank == 4)
+        continue;
+      int maybe = 0;
+      for(int i=0; i<5; i++)
+        if(mGame->getBoardPos(i) == rank-1)
+          maybe+=2;
+      if(maybe > 0 && maybe > potential)
+      {
+        p_card = c;
+        potential = maybe;
+      }
+    }
+    if(suit != UNKNOWN && rank == UNKNOWN)
+    {
+      if(mGame->getBoardPos(suit) != 4)
+        if(potential < 1)
+        {
+          potential = 1;
+          p_card = c;
+        }
+    }
+    
+  }
+  
+  if(potential > 0 && mGame->getTime() > 0 && mGame->getTurnNumber() > 40)
+  {
+    action = ACT_PLAY;
+    arg1 = p_card;
+    return;
+  }
+
 //----------------Discard a Non Critical Card-----------------------------------
 
-int low_c = 5;
-int low_value = 5;
+  int low_c = 5;
+  int low_value = 5;
 
-for(int c = 0; c < 4 ; c++)
-{
+  for(int c = 0; c < 4 ; c++)
+  {
     int rank = getRank(c);
     int suit = getSuit(c);
 
-    int is_c_critical = -1;
+    bool is_c_critical = false;
 
     if(rank == 4)
-        is_c_critical = 1;
+      is_c_critical = true;
 
-    if( rank>0 && rank<4 && suit != 5 )
+    if(rank>0 && rank<4 && suit != UNKNOWN)
     {
-        for (int d = 0; d < mGame->getDiscardSize(); d++)
+      for(int d = 0; d < mGame->getDiscardSize(); d++)
+      {
+        if (mGame->getDiscard(d).rank == rank
+           && mGame->getDiscard(d).color == suit)
         {
-            if (mGame->getDiscard(d).rank == rank
-             && mGame->getDiscard(d).color == suit)
-             {
-                is_c_critical = 1;
-             }
+          is_c_critical = true;
         }
+      }
     }
 
-    if( rank == 0 && suit != 5 ) // NOT SURE WE WANT TO DO THIS.........
+    if (!is_c_critical && rank < low_value)
     {
-        for (int d = 0; d < mGame->getDiscardSize(); d++)
-        {
-            if (mGame->getDiscard(d).rank == rank
-             && mGame->getDiscard(d).color == suit)
-             {
-                is_c_critical += 1;
-             }
-        }
-    }
-
-    if (is_c_critical != 1 && rank < low_value)
-    {
-        low_c = c;
-        low_value = rank;
+      low_c = c;
+      low_value = rank;
     }
 }
 

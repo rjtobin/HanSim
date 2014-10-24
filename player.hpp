@@ -47,6 +47,7 @@ private:
   int myData[5][4][5][5]; //data is always same to all players
                           //this has extra info that I see
                           
+  int seenCards[5][5]; // color rank
   
   /*
    Using 'data', if we know the rank of the card with a given index, 
