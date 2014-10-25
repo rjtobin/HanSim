@@ -28,7 +28,7 @@ void Player::init()
     for (int c = 0; c < 4; c++)
       for (int r = 0; r < 5; r++)
         for (int s = 0; s < 5; s++)
-          data[p][c][r][s]=5;
+          data[p][c][r][s] = UNKNOWN;
           
   for(int i=0; i<5; i++)
     for(int j=0; j<5; j++)
@@ -71,7 +71,7 @@ void Player::preturnUpdate(int player)
     int rank = getRank(i);
     int suit = getSuit(i);
     
-    if(rank != 5 && suit != 5)
+    if(rank != UNKNOWN && suit != UNKNOWN)
       seenCards[suit][rank]++;
   }
   //cout << "start seen " << seenCards[0][0] << ' ' << seenCards[0][1] << ' ' << seenCards[0][2] << ' ' << seenCards[0][3] << ' ' << seenCards[0][4] << endl;
@@ -256,11 +256,11 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
       }
       
       //everything unknown, give rank hint
-      if (card_found == 0)
+      if(card_found == 0)
       {
         for(int c=0; c<4; c++) 
         {
-          if(getRank(p,c)==5 && getSuit(p,c)==5)
+          if(getRank(p,c)==UNKNOWN && getSuit(p,c)==UNKNOWN)
           {
             card_found = 1;
             unknown_card[p]=c;
@@ -292,7 +292,7 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
     int best_t = 5;      
 
     //Checks suits
-    for(int p_index = 0; p_index < 5; p_index++)
+    for(int p_index=0; p_index < 5; p_index++)
     { 
       int p =((mPlayerIndex + p_index)%5);
       if(mPlayerIndex != p)
@@ -300,84 +300,89 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
         int hints = 0;
         for(int c = 0; c < 4; c++)
         {
-            if(mGame->getCard(p,unknown_card[p]).color  == info_sum)
+          if(mGame->getCard(p,unknown_card[p]).color  == info_sum)
+          {
+            hint_possible = 1;
+            //now checks to see if hint is new and not redundant
+            
+            if( getSuit(p,c) == UNKNOWN
+             && (unknown_card[p] != c || unknown_type[p] != 1))
             {
-                hint_possible = 1;
-                //now checks to see if hint is new and not redundant
-                if(getSuit(p,c)==5
-                   && (unknown_card[p] != c || unknown_type[p] != 1))
-                {
-                     if(seeAlive(p,c))
-                        hints += 1;
-                }
+              if(seeAlive(p,c))
+                hints += 1;
             }
+          }
         }
 
-        if (hints > most_hints)
+        if(hints > most_hints)
         {
-            best_p = p;
-            best_t = 1; 
-            most_hints=hints;
+          best_p = p;
+          best_t = 1; 
+          most_hints = hints;
         }
 
-        if (hints == 0 && most_hints == 0 && hint_possible == 1)
+        if(hints == 0 && most_hints == 0 && hint_possible == 1)
         {
-            best_p = p;
-            best_t = 1; 
+          best_p = p;
+          best_t = 1; 
         }
-    }}
+      }
+    }
     
     //Check Rank
-    for(int p_index = 0; p_index < 5; p_index++){ int p =((mPlayerIndex + p_index)%5);
-     if(mPlayerIndex != p)
-     {
+    for(int p_index = 0; p_index<5; p_index++)
+    { 
+      int p =((mPlayerIndex + p_index)%5);
+      if(mPlayerIndex != p)
+      {
         int hints = 0;
         for(int c = 0; c < 4; c++)
         {
-            if(mGame->getCard(p,c).rank == info_sum)
+          if(mGame->getCard(p,c).rank == info_sum)
+          {
+            hint_possible = 1;
+            
+            // now checks to see if hint is new and not redundant
+            if( getRank(p,c) == UNKNOWN
+             &&(unknown_card[p] != c || unknown_type[p] != 0))
             {
-                hint_possible = 1;
-                //now checks to see if hint is new and not redundant
-                if(getRank(p,c)==5
-                   && (unknown_card[p] != c || unknown_type[p] != 0))
-                {
-                    if(seeAlive(p,c)==1)
-                    hints += 1;
-                }
+              if(seeAlive(p,c)==1)
+                hints += 1;
             }
+          }
         }
 
-        if (hints > most_hints)
+        if(hints > most_hints)
         {
-            best_p = p;
-            best_t = 0; 
-            most_hints=hints;
+          best_p = p;
+          best_t = 0; 
+          most_hints = hints;
         }
 
-        if (hints == 0 && most_hints == 0 && hint_possible == 1)
+        if(hints==0 && most_hints==0 && hint_possible==1)
         {
-            best_p = p;
-            best_t = 0; 
+          best_p = p;
+          best_t = 0; 
         }
-    }}
-
-    if (hint_possible == 1)
-    {
-        action = ACT_HINT;
-        arg1 = best_p;
-        if (best_t == 1)
-            arg2 = HINT_COLOR;
-        if (best_t == 0)
-            arg2 = HINT_RANK;
-        arg3 = info_sum;
-        return;
+      }
     }
-}
 
+    if(hint_possible == 1)
+    {
+      action = ACT_HINT;
+      arg1 = best_p;
+      if(best_t == 1)
+        arg2 = HINT_COLOR;
+      if(best_t == 0)
+        arg2 = HINT_RANK;
+      arg3 = info_sum;
+      return;
+    }
+  }
 
-//--------------------Discard Dead Card-----------------------------------------
-
-  for(int c = 0; c < 4; c++)
+  //--------------------Discard Dead Card-----------------------------------------
+  
+  for(int c=0; c<4; c++)
   {
     if(!isAlive(mPlayerIndex,c))
     {
@@ -387,22 +392,50 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
     }
   }
 
-//--------------------Discard Known Duplicate------------------------------------
+  //--------------------Discard Known Duplicate------------------------------------
 
-  for(int c = 3; c >-1 ; c--)
+  for(int c = 3; c >=0; c--)
   {
     int rank = getRank(c);
     int suit = getSuit(c);
 
-    if(rank != 5 && suit !=5)
+    if(rank!=UNKNOWN && suit!=UNKNOWN)
     {
-        for (int p = 0; p <5; p++)
+      for(int p=0; p<5; p++)
+      {
+        for(int p_card=0; p_card<4; p_card++)
         {
-          for (int p_card = 0; p_card < 4; p_card++)
+          if(p==mPlayerIndex && p_card == c)
+            continue;
+          if(getRank(p,p_card) == rank && getSuit(p,p_card) == suit)
           {
-            if(p == mPlayerIndex && p_card == c)
-              continue;
-            if (getRank(p,p_card) == rank && getSuit(p,p_card) == suit)
+            action = ACT_DISCARD;
+            arg1 = c;
+            return;
+          }
+        }
+      }
+    }
+  }
+
+
+  //--------------------Discard Unknow Duplicate----------------------------------
+
+  for(int c=3; c>=0; c--)
+  {
+    int rank = getRank(c);
+    int suit = getSuit(c);
+
+    if(rank!=UNKNOWN && suit!=UNKNOWN)
+    {
+      for(int p=0; p<5; p++)
+      {
+        if(p!=mPlayerIndex)
+        {
+          for(int p_card=0; p_card<4; p_card++)
+          {
+            if(mGame->getCard(p,p_card).rank == rank 
+             && mGame->getCard(p,p_card).color == suit)
             {
               action = ACT_DISCARD;
               arg1 = c;
@@ -410,37 +443,13 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
             }
           }
         }
+      }
     }
   }
 
-
-//--------------------Discard Unknow Duplicate----------------------------------
-
-for(int c = 3; c >-1 ; c--)
-{
-    int rank = getRank(c);
-    int suit = getSuit(c);
-
-    if(rank!=5 && suit!=5)
-    {
-        for (int p = 0; p <5; p++){
-         if (p != mPlayerIndex)
-         {
-            for (int p_card = 0; p_card < 4; p_card++)
-            {
-               if (mGame->getCard(p,p_card).rank == rank 
-                     && mGame->getCard(p,p_card).color == suit)
-                {
-                    action = ACT_DISCARD; arg1 = c; return;
-                }
-            }
-        }}
-    }
-}
-
-//----------------Play random card-----------------------------------
+  //----------------Play random card-----------------------------------
   
-  int potential = -1,p_card = 0;
+  int potential = -1, p_card = 0;
   for(int c=0; c<4; c++)
   {
     int rank = getRank(c);
@@ -511,14 +520,16 @@ for(int c = 3; c >-1 ; c--)
       low_c = c;
       low_value = rank;
     }
-}
+  }
 
-if ( low_value != 5)
-{
-        action = ACT_DISCARD; arg1 = low_c; return;
-}
+  if(low_value != 5)
+  {
+    action = ACT_DISCARD;
+    arg1 = low_c;
+    return;
+  }
 
-//--------------------Discard Last Card-----------------------------------------
+  //--------------------Discard Last Card-----------------------------------------
 
   action = ACT_DISCARD;
   arg1 = 3; //drand48() * 3;
@@ -527,18 +538,17 @@ if ( low_value != 5)
 //==============================================================================
 //                              Updates Player (if 
 //==============================================================================
-void Player::update(int player, int outcome, int arg1, int arg2, int arg3)
+void Player::update(int p_turn, int outcome, int arg1, int arg2, int arg3)
 {
   if (outcome != OUT_HINT)
     return;
 
-  int p_turn = player;
   int p_given = arg1;
   int t_given = 5;
-    if(arg2==HINT_RANK)
-        t_given=0;
-    if(arg2==HINT_COLOR)
-        t_given=1;
+  if(arg2==HINT_RANK)
+    t_given=0;
+  if(arg2==HINT_COLOR)
+    t_given=1;
   int v_given = arg3;
   // This function is called after any player (including myself!)
   // makes an action.  'action' stores the action type
@@ -562,160 +572,149 @@ void Player::update(int player, int outcome, int arg1, int arg2, int arg3)
   // then update my memory:
 
 
-//-------------Updates implicit (i.e. mod) info given for color hint------------
-    // Important to do impliccit update BEFORE explicit update
+  //-------------Updates implicit (i.e. mod) info given for color hint------------
+  // Important to do implicit update BEFORE explicit update
 
+  // if no unknown, both unknown_card and unknown_type remain 0
+  int unknown_card[5];
+  int unknown_type[5];
+    
+  for(int i=0; i<5; i++)
+    unknown_card[i] = unknown_type[i] = 0;
 
-    // if no unknown, both unknown_card and unknown_type remain 0
-// if no unknown, both unknown_card and unknown_type remain 0
-    int unknown_card[5]={0};
-    int unknown_type[5]={0};
+  for(int p=0; p<5; p++)
+  {
+    int card_found = 0;
+    
+    //rank known, color unknown, rank matches board (im excited)
+    for(int c=0; c<4; c++) 
+    {
+      if(getRank(p,c)!=UNKNOWN && getSuit(p,c)==UNKNOWN && goodPlayOnRank(p,c)==1)
+      {
+        card_found = 1;
+        unknown_card[p]=c;
+        unknown_type[p]=1;
+        break;
+      }
+    }
 
+    //rank unknown, suit know, posPlay on suit; don't want to hint at dead
+    if(card_found == 0)
+    {
+      for(int c=0; c<4; c++)
+      {
+        if(getRank(p,c)==UNKNOWN && getSuit(p,c)!=UNKNOWN && posPlayOnSuit(p,c)==1)
+        {
+          card_found = 1;
+          unknown_card[p]=c;
+          unknown_type[p]=0;
+          break;
+        }
+      }
+    }
+
+    if(card_found == 0)
+    {
+      for(int c=0; c<4; c++)
+      {
+        if(getRank(p,c)!=UNKNOWN && getSuit(p,c)==UNKNOWN && posPlayOnRank(p,c)==1)
+        {
+          card_found=1;
+          unknown_card[p]=c;
+          unknown_type[p]=1;
+          break;
+        }
+      }
+    }
+
+    //everything unknown, give rank hint
+    if(card_found == 0)
+    {
+      for(int c=0; c<4; c++) 
+      {
+        if(getRank(p,c)==UNKNOWN && getSuit(p,c)==UNKNOWN)
+        {
+          card_found = 1;
+          unknown_card[p]=c;
+          unknown_type[p]=0;
+          break;
+        }
+      }
+    }      
+  }
+
+  // Everyone except p_turn now knows their first unknown
+
+  // First update everyone other than mPlayerIndex and p_turn
+  for (int p=0; p<5; p++)
+  {
+    if(p != p_turn && p != mPlayerIndex)
+    {
+      if(unknown_type[p] == 0)
+        setRank(p, unknown_card[p], mGame->getCard(p,unknown_card[p]).rank);
+      if(unknown_type[p] == 1)
+        setSuit(p, unknown_card[p], mGame->getCard(p,unknown_card[p]).color);
+    }
+  }
+
+  //Second update everyone but p_turn about first unknown
+  if(mPlayerIndex != p_turn)
+  {
     for(int p=0; p<5; p++)
     {
-        int card_found = 0;
-
-
-        //rank known, color unknown, rank matches board (im excited)
-        for(int c=0; c<4; c++) 
+      if(p != p_turn)
+      {
+        // compute visable sum
+        int vis_sum = 0;
+        for(int p=0; p<5; p++)
         {
-          if(getRank(p,c) !=5 && getSuit(p,c)==5 && goodPlayOnRank(p,c)==1)
+          if(p != p_turn && p != mPlayerIndex)
           {
-                card_found = 1;
-                unknown_card[p]=c;
-                unknown_type[p]=1;
-                c=5; //stops search for unknown card
+            if(unknown_type[p] == 0)
+              vis_sum += mGame->getCard(p,unknown_card[p]).rank;
+            if(unknown_type[p] == 1)
+              vis_sum += mGame->getCard(p,unknown_card[p]).color;
           }
         }
 
-        //rank unknown, suit know, posPlay on suit; don't want to hint at dead
-        if (card_found == 0)
-        {
-            for(int c=0; c<4; c++) //c will be set to 5 when unknown is found
-            {
-              if(getRank(p,c)==5 && getSuit(p,c)!=5 && posPlayOnSuit(p,c)==1 )
-              {
-                card_found = 1;
-                unknown_card[p]=c;
-                unknown_type[p]=0;
-                c=5; //stops search for unknown card
-              }
-            }
-        }
-
-
-        if (card_found == 0)
-        {
-            for(int c=0; c<4; c++) //c will be set to 5 when unknown is found
-            {
-              if(getRank(p,c)!=5 && getSuit(p,c)==5 && posPlayOnRank(p,c)==1 )
-              {
-                card_found=1;
-                unknown_card[p]=c;
-                unknown_type[p]=1;
-                c=5; //stops search for unknown card
-              }
-            }
-        }
-
-        //everything unknown, give rank hint
-        if (card_found == 0)
-        {
-            for(int c=0; c<4; c++) //c will be set to 5 when unknown is found
-            {
-              if(getRank(p,c)==5 && getSuit(p,c)==5)
-              {
-                card_found = 1;
-                unknown_card[p]=c;
-                unknown_type[p]=0;
-                c=5; //stops search for unknown card
-              }
-            }
-        }
-
-        
-
+        // deduces own card (we know myCard + vis_sum = v_given) 
+        int v_for_me = 0;
+        v_for_me = ((25 + v_given - vis_sum) % 5);
+        if(unknown_type[mPlayerIndex] == 0)
+          setRank(mPlayerIndex, unknown_card[mPlayerIndex], v_for_me);
+        if(unknown_type[mPlayerIndex] == 1)
+          setSuit( mPlayerIndex , unknown_card[mPlayerIndex] , v_for_me );
+      }
     }
-
-    //Everyone except p_turn now knows their first unknown
-
-    //First update everyone other than mPlayerIndex and p_turn
-    for (int p = 0; p <5; p++){
-     if(p != p_turn && p != mPlayerIndex)
-     {
-       if (unknown_type[p] == 0)
-        setRank( p , unknown_card[p] , mGame->getCard(p,unknown_card[p]).rank );
-       if (unknown_type[p] == 1)
-        setSuit( p , unknown_card[p] , mGame->getCard(p,unknown_card[p]).color);
-    }}
-
-    //Second update everyone but p_turn about first unknown
-    if(mPlayerIndex != p_turn)
-    {
-        for (int p = 0; p <5; p++){
-         if(p != p_turn)
-         {
-            //compute visable sum
-            int vis_sum = 0;
-            for (int p = 0; p <5; p++){
-             if(p != p_turn && p != mPlayerIndex)
-             {
-                if (unknown_type[p] == 0)
-                 vis_sum += mGame->getCard(p,unknown_card[p]).rank;
-                if (unknown_type[p] == 1)
-                 vis_sum += mGame->getCard(p,unknown_card[p]).color;
-            }}
-
-            // deduces own card (we know myCard + vis_sum = v_given) 
-            int v_for_me = 0;
-            v_for_me = ((25 + v_given - vis_sum) % 5);
-            if (unknown_type[mPlayerIndex] == 0)
-                setRank( mPlayerIndex , unknown_card[mPlayerIndex] , v_for_me );
-            if (unknown_type[mPlayerIndex] == 1)
-                setSuit( mPlayerIndex , unknown_card[mPlayerIndex] , v_for_me );
-        }}
-    }
-//------------Hint not to me, updates explicit (i.e. non mod) info given--------
+  }
+  //------------Hint not to me, updates explicit (i.e. non mod) info given--------
   // If hint is to me, I will need more info to make the update,
   // this will be handled in the player hint methoid next
-if(outcome == OUT_HINT && p_given != mPlayerIndex)
-{
-  if(t_given == 0) // The hint was a rank
+  if(outcome == OUT_HINT && p_given != mPlayerIndex)
   {
-    for(int c=0; c<4; c++)
+    if(t_given == 0) // The hint was a rank
     {
-      if(mGame->getCard(p_given,c).rank == v_given)
+      for(int c=0; c<4; c++)
       {
-        setRank(p_given,c,v_given);
+        if(mGame->getCard(p_given,c).rank == v_given)
+        {
+          setRank(p_given,c,v_given);
+        }
       }
     }
-  }
-  if(t_given == 1) // The hint was a color
-  {
-    for(int c=0; c<4; c++)
+    if(t_given == 1) // The hint was a color
     {
-      if(mGame->getCard(p_given,c).color == v_given)
+      for(int c=0; c<4; c++)
       {
-        setSuit(p_given,c,v_given);
+        if(mGame->getCard(p_given,c).color == v_given)
+        {
+          setSuit(p_given,c,v_given);
+        }
       }
     }
   }
 }
 
-//NEARLY PERFECT INFORMATION
-// for (int p = 0; p<5; p++)
-//{   if(outcome != OUT_PLAY && p_turn != p)
-//    {
-//        for (int c = 0; c<4; c++)
-//        {
-//            setRank(p,c,mGame->getCard(p,c).rank);
-//            setSuit(p,c,mGame->getCard(p,c).color);
-//        }
-//    }
-//}
-
-
-}
 //==============================================================================
 //                  Updates Player with Explicit info Given to Him
 //==============================================================================
@@ -774,39 +773,20 @@ void Player::updateHand(int p_given, int c_given)
 //==============================================================================
 void Player::printState(ostream& out)
 {
-    out << ' ';
+  out << ' ';
+  Card card;
 
-    Card card;
-
-    for(int c=0; c<4; c++)
-    {
-        int rank = getRank(c);
-        int suit = getSuit(c);
-        card = mGame->getCard(mPlayerIndex,c);
-        if(suit != 5 && card.color != suit)
-          out << "WRONG" << endl;
-        if(rank != 5 && card.rank != rank)
-          out << "WRONG" << endl;
-        out << suit  << rank << ' ';
-    }
-    
-    /*out << "BEGIN MEMORY" << endl << endl;
-    
-    for(int i=0; i<5; i++)
-    {
-      out << "Player " << i << "'s actual hand: (color,rank)" << endl;
-      
-      for(int j=0; j<4; j++)
-      {
-        Card ca = mGame->getCard(i,j);
-        out << ca.color << ca.rank << ' ';
-      }
-      cout << endl;
-    }
-    
-    out << "END MEMORY" << endl << endl;
-    
-    out << "END MEMORY" << endl;*/
+  for(int c=0; c<4; c++)
+  {
+    int rank = getRank(c);
+    int suit = getSuit(c);
+    card = mGame->getCard(mPlayerIndex,c);
+    if(suit != UNKNOWN && card.color != suit)
+      out << "WRONG" << endl;
+    if(rank != UNKNOWN && card.rank != rank)
+      out << "WRONG" << endl;
+    out << suit  << rank << ' ';
+  }
 }
 
 
@@ -825,7 +805,7 @@ bool Player::goodCards(int p)
 
   for(int c=0; c<4; c++) 
   {
-    if(getRank(p,c) !=5 && getSuit(p,c)!=5)
+    if(getRank(p,c)!=UNKNOWN && getSuit(p,c)!=UNKNOWN)
     {
       return true;
     }
@@ -836,7 +816,7 @@ bool Player::goodCards(int p)
 
 bool Player::posPlayOnSuit(int p, int c)
 {
-  if(mGame->getBoardPos(getSuit(p,c)) != 4 )
+  if(mGame->getBoardPos(getSuit(p,c)) != 4)
     return true;
   else
     return false;
@@ -1024,6 +1004,4 @@ bool Player::seeAlive(int p, int c)
   }
   return true;
 }
-
-
 
