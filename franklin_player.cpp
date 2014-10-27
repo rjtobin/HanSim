@@ -481,7 +481,7 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
     
   }
   
-  if(potential > 0 && mGame->getTime() > 0 && mGame->getTurnNumber() > 40)
+  if(potential > 0 && mGame->getNumStrikes() > 0 && mGame->getTurnNumber() > 40)
   {
     action = ACT_PLAY;
     arg1 = p_card;
@@ -491,7 +491,7 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
 //----------------Discard a Non Critical Card-----------------------------------
 
   int low_c = 5;
-  int low_value = 5;
+  int low_value = -1;
 
   for(int c = 0; c < 4 ; c++)
   {
@@ -515,14 +515,14 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
       }
     }
 
-    if (!is_c_critical && rank < low_value)
+    if (!is_c_critical && rank > low_value)
     {
       low_c = c;
       low_value = rank;
     }
   }
 
-  if(low_value != 5)
+  if(low_value != -1)
   {
     action = ACT_DISCARD;
     arg1 = low_c;
@@ -532,7 +532,7 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
   //--------------------Discard Last Card-----------------------------------------
 
   action = ACT_DISCARD;
-  arg1 = 3; //drand48() * 3;
+  arg1 = 3;
 }
 
 //==============================================================================
