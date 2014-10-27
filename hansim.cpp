@@ -456,3 +456,8 @@ int HanSim::getTurnNumber()
 {
   return mTurnNumber;
 }
+
+int HanSim::getNumStrikes()
+{
+  return mStrikes;
+}

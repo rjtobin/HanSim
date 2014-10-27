@@ -135,6 +135,11 @@ public:
   */  
   int getTurnNumber();
     
+  /*
+    Returns the number of strikes.
+  */  
+  int getNumStrikes();  
+    
 private:
   void output_board(std::ostream& out);
   void output_line(std::ostream& out);
