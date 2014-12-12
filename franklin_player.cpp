@@ -1,12 +1,12 @@
 /* 
   This file is part of HanSim (copyright GRWC Han Group 2014).
 
-  Foobar is free software: you can redistribute it and/or modify
+  HanSim is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Foobar is distributed in the hope that it will be useful,
+  HanSim is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
@@ -138,9 +138,14 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
         if(mGame->getBoardPos(available) == rank - 1)
         {
           //cout << "using deduction " << endl;
-          action = ACT_PLAY;
-          arg1 = c;
-          return;
+          //action = ACT_PLAY;
+          //arg1 = c;
+          if(rank < lowest_playable_rank)
+          {
+            lowest_playable_rank = rank;
+            lowest_playable_card = c;
+          }
+          //return;
         }
       }
     }
@@ -167,9 +172,14 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
         //cerr << "seen: " << ' ' << seenCards[suit][0] << ' ' << seenCards[suit][1] << ' ' << seenCards[suit][2] << ' ' << seenCards[suit][3] << ' ' << seenCards[suit][4] << endl;
         if(mGame->getBoardPos(suit) == available - 1)
         {
-          action = ACT_PLAY;
-          arg1 = c;
-          return;
+          //action = ACT_PLAY;
+          //arg1 = c;
+          //return;
+          if(available < lowest_playable_rank)
+          {
+            lowest_playable_rank = available;
+            lowest_playable_card = c;
+          }
         }
       }
     }
@@ -182,7 +192,7 @@ void Player::play(int& action, int& arg1, int& arg2, int& arg3)
     return;
   }
 
-  if(/*goodCards(mPlayerIndex) != 1 &&*/ mGame->getDiscardSize() < 23 && mGame->getTurnNumber() > 5)
+  if(/*goodCards(mPlayerIndex) != 1 &&*/ mGame->getDiscardSize() < 23 && mGame->getTurnNumber() > 5 && mGame->getTime() < 8)
   {
     for(int c = 0; c < 4; c++)
     {
