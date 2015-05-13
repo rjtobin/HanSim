@@ -20,81 +20,134 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <fstream> 
+#include <fstream>
 
-#define ACT_DISCARD 0
-#define ACT_PLAY 1
-#define ACT_HINT 2
+using namespace std;
 
+// Keywords to represent each player
+#define PLAYER_0 0
+#define PLAYER_1 1
+#define PLAYER_2 2
+#define PLAYER_3 3
+#define PLAYER_4 4
+
+// Keywords to represent each position
+#define TURN_BEGIN 0
+#define TURN_MIDDLE 1
+#define TURN_END 2
+
+// Keywords to represent each action
+#define ACT_PLAY 0
+#define ACT_HINT 1
+#define ACT_DISCARD 2
+
+// Keywords to represent each card
+#define CARD_0 0
+#define CARD_1 1
+#define CARD_2 2
+#define CARD_3 3
+
+// Keywords to represent each hint_type
+#define RANK 0
+#define SUIT 1
+
+// Keywords to represent each hint_value
+#define RANK_0 0
+#define RANK_1 1
+#define RANK_2 2
+#define RANK_3 3
+#define RANK_4 4
+
+// Keywords to represent each hint_value
+#define SUIT_0 0
+#define SUIT_1 1
+#define SUIT_2 2
+#define SUIT_3 3
+#define SUIT_4 4
+
+// Keywords to represent each outcome
 #define OUT_PLAY 0
-#define OUT_STRIKE 1
-#define OUT_HINT 2
-#define OUT_DISCARD 3
-
-#define HINT_COLOR 0
-#define HINT_RANK 1
+#define OUT_HINT 1
+#define OUT_DISCARD 2
+#define OUT_STRIKE 3
 
 class HanSim;
-
-/*
-Card:
-0 - 1
-1 - 2
-2 - 3
-3 - 4
-4 - 5
-
-Color:
-0 - blue
-1 - green
-2 - red
-3 - white
-4 - yellow
-*/
 
 class Card
 {
 public:
-  Card() : color(5), rank(5) {;}
-  Card(int c, int r) : color(c), rank(r) {;}
-  int color, rank; 
+  Card() : suit(5), rank(5) {;}
+  Card(int s, int r) : suit(s), rank(r) {;}
+  int suit, rank; 
 };
 
-
-#include "player.hpp"
+struct Turn
+{
+  int player, position;
+  int action;
+  int card; //identifies the card played or discarded
+  int hint_to, hint_type, hint_value; //identify the hint given
+  int outcome;
+  int hint_info[4] ; //identifies cards that match the hint
+};
 
 class HanSim
 {
 public:
-  HanSim();
-  ~HanSim();
-  
-  
-  ////
-  //// GAME MANAGEMENT
-  ////
-  
+
+  //============================================================
+  //                 Plays the game
+  //============================================================
+    
   /*
-   Reshuffle and redeal, then play the game.  
-   Returns score of game.  The argument 'display'
-   should be true if the game status should be 
-   outputted to the screen.
+   Creates an instance of the game.
+   That is, creates player objects and a shuffled deck of cards
+  */
+  HanSim();
+    
+  /*
+   Plays a full instance of the game.
+   Returns the score of game.
+   The argument 'display' should be true if the game status 
+   should be outputted to the screen or to a file.
+   The argument 'to_file' should be true if the game 
+   should be outputted to the file 'hansim_out.txt',
+   otherwise the output will be the screen.
   */
   int play(bool display, bool to_file);
 
-  
-  ////
-  //// PLAYER INTERFACE
-  ////
-  
   /*
-   Get card indexed card_index from player's hand.  If called
+   Deletes the instance of the game.
+  */
+  ~HanSim();
+  
+
+  //============================================================
+  //                 Player Interface
+  //============================================================
+  
+  
+  //---------------Look at cards in hands-----------------------
+ 
+  /*
+   Returns card card_index from player's hand.  If called
    when mCurPlayer is the same as player, will return a (-1,-1) 
-   card.
-   
-   Returns the requested card. 
+   card since request is illegal.
   */
   Card getCard(int player, int card_index);
+
+
+  //------Look at discarded, played, and used cards-------------
+  
+  /*
+    We have three different types of discard decks:
+     (1) Discard <- the cards that were discarded or
+         were striked
+     (2) Played <- cards that were successfully
+         played by a player.
+     (3) Used <- any card that was played, discarded
+         or striked.
+  */
   
   /*
    Get a card from the discard pile, numbered chronologically 
@@ -108,12 +161,44 @@ public:
    Returns the number of cards in the discard pile.
   */
   int getDiscardSize();
+
+  /*
+   Get a card from the played pile, numbered chronologically 
+   by index.
+   
+   Returns the requested card.
+  */
+  Card getPlayedCard(int index);
   
   /*
-   Get the rank of the highest card of a given color that has been played.
-   If no card of that color has been played, returns -1.
+   Returns the number of cards in the played pile.
   */
-  int getBoardPos(int color);
+  int getPlayedSize();
+
+  /*
+   Get a card from the used pile, numbered chronologically 
+   by index.
+   
+   Returns the requested card.
+  */
+  Card getUsedCard(int index);
+  
+  /*
+   Returns the number of cards in the discard pile.
+  */
+  int getUsedSize();
+  
+  
+  //-----------Look at the board position---------------------
+  
+  /*
+   Get the rank of the highest card of a given suitthat has been played.
+   If no card of that suit has been played, returns -1.
+  */
+  int getBoardPos(int suit);
+  
+  
+  //-----------Current game information---------------------
 
   /*
    Returns the number of players.
@@ -134,11 +219,36 @@ public:
     Returns the turn number.
   */  
   int getTurnNumber();
-    
+
+  /*
+    Returns whether we are in the start, middle                                 
+    or end of turn.
+  // for mTurnPosition, TURN_BEGIN is start of turn (before anything
+  // has happened), TURN_MIDDLE is mid-turn (before the end) and
+  // TURN_END is the end of the turn (we are about to display
+  // stuff and then start the next turn).
+  */
+  int getTurnPosition();
+  
   /*
     Returns the number of strikes.
   */  
   int getNumStrikes();  
+  
+   /*
+     Returns the current player.
+   */  
+  int getCurPlayer();  
+  
+  
+  //-----------Recall past information---------------------
+
+  /*
+    Returns what happened on a given turn;                                       
+  */
+  Turn getTurnHistory(int turn);
+  
+  
     
 private:
   void output_board(std::ostream& out);
@@ -150,9 +260,11 @@ private:
   /*
    Discard card indexed by card_index from player's hand, and
    gives a new card if possible.  Updates the players that 
-   this has happened.
+   this has happened.  'played' determines whether the card
+   was successfully played or discarded, which controls what
+   discard pile it should be put in.
   */
-  Card discard(int player, int card_index);
+  Card useCard(int player, int card_index, bool played);
 
 
   Player* mPlayer[5];
@@ -160,21 +272,45 @@ private:
   
   Card mDeck[60];
   int mDeckTop;
-  
+
+  /*
+    We have three different types of discard decks:
+     (1) Discard <- the cards that were discarded or
+         were striked
+     (2) Played <- cards that were intentionally
+         played by a player.
+     (3) Used <- any card that was played, discarded
+         or striked.
+  */
   Card mDiscard[60];
   int mDiscardSize;
+
+  Card mPlayed[60];
+  int mPlayedSize;
+
+  Card mUsed[60];
+  int mUsedSize;
   
   Card mHands[5][4];
   int mHandSize[5];
   
   int mCurPlayer;
-
+  
   int mHints;
+
   int mStrikes;
   
   int mBoardPos[5];
 
   int mTurnNumber;
+  // for mTurnPosition, TURN_BEGIN is start of turn (before anything
+  // has happened), TURN_MIDDLE is mid-turn (before the end) and
+  // TURN_END is the end of the turn (we are about to display
+  // stuff and then start the next turn).
+  int mTurnPosition;
+
+  Turn mTurnHistory[100];
+  
 };
 
 #endif

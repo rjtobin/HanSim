@@ -19,17 +19,18 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "hansim.hpp"
+#include "info_player.cpp"
+#include "hansim.cpp"
 
 using namespace std;
 
 #ifndef SEED
-#define SEED 20
+#define SEED 100
 #endif
 
 int main()
 {
-   int num_games = 1000;
+  int num_games = 1000;
   
   srand48(SEED);
   
@@ -42,17 +43,16 @@ int main()
   for(int i=0; i<num_games; i++)
   {
     HanSim h;
-    tmp = h.play(true,true);
+    tmp = h.play(false,false);
     total += tmp;
     scores[tmp]++;
-
   }
   total /= num_games;
 
   for(int i=0; i<=25; i++)
     cerr << i << ' ' << scores[i] << endl;
   
-  cerr << total << endl;
+  cout << total << endl;
   
   return 0;
 }
